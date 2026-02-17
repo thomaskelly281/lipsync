@@ -14,15 +14,33 @@ import { lipsyncManager } from "../App";
 
 let setupMode = false;
 
+// Co-articulation blend table: when a vowel is active, nearby vowels retain
+// a small partial shape. This simulates how the mouth continuously transitions
+// between phonemes rather than jumping between discrete positions.
+const VOWEL_BLENDS = {
+  [VISEMES.aa]: { [VISEMES.E]: 0.25, [VISEMES.O]: 0.2 },
+  [VISEMES.E]:  { [VISEMES.aa]: 0.25, [VISEMES.I]: 0.2 },
+  [VISEMES.I]:  { [VISEMES.E]: 0.2,  [VISEMES.U]: 0.15 },
+  [VISEMES.O]:  { [VISEMES.aa]: 0.2, [VISEMES.U]: 0.25 },
+  [VISEMES.U]:  { [VISEMES.O]: 0.25, [VISEMES.I]: 0.15 },
+};
+
 export function Avatar(props) {
   const { nodes, materials, scene } = useGLTF(
     "/models/64f1a714fe61576b46f27ca2.glb"
   );
 
-  const { smoothMovements } = useControls("Avatar", {
+  const { smoothMovements, mouthIntensity } = useControls("Avatar", {
     smoothMovements: {
       value: true,
       label: "Smooth Movements",
+    },
+    mouthIntensity: {
+      value: 0.7,
+      min: 0.3,
+      max: 1.0,
+      step: 0.05,
+      label: "Mouth Intensity",
     },
   });
 
@@ -83,21 +101,36 @@ export function Avatar(props) {
 
     const viseme = lipsyncManager.viseme;
     const state = lipsyncManager.state;
-    lerpMorphTarget(
-      viseme,
-      1,
-      smoothMovements ? (state === "vowel" ? 0.2 : 0.4) : 1
-    );
 
+    // Volume-scaled intensity: mouth opens proportionally to how loud the
+    // speaker is rather than always snapping to 100% open.
+    // Apply user-controlled intensity multiplier to fine-tune mouth opening.
+    const intensity = lipsyncManager.getIntensity() * mouthIntensity;
+
+    // Lerp speeds tuned per phoneme category.
+    // Vowels move slowly (natural formant glides), consonants faster (sharp
+    // bursts), but still much slower than the original to avoid jitter.
+    const isVowel = state === "vowel";
+    const activeLerpSpeed   = smoothMovements ? (isVowel ? 0.06 : 0.14) : 0.5;
+    const inactiveLerpSpeed = smoothMovements ? (isVowel ? 0.04 : 0.09) : 0.4;
+
+    // Get the co-articulation blend targets for the current viseme (if any).
+    const blends = VOWEL_BLENDS[viseme] ?? {};
+
+    // Drive every viseme morph target.
     Object.values(VISEMES).forEach((value) => {
-      if (viseme === value) {
-        return;
+      if (value === viseme) {
+        // Active viseme: lerp toward volume-scaled intensity.
+        lerpMorphTarget(value, intensity, activeLerpSpeed);
+      } else if (blends[value] !== undefined) {
+        // Adjacent vowel co-articulation: keep a partial shape weighted by
+        // both the blend amount and the overall intensity (so it also scales
+        // with loudness and fades out on silence).
+        lerpMorphTarget(value, blends[value] * intensity, inactiveLerpSpeed);
+      } else {
+        // All other visemes: decay smoothly to zero.
+        lerpMorphTarget(value, 0, inactiveLerpSpeed);
       }
-      lerpMorphTarget(
-        value,
-        0,
-        smoothMovements ? (state === "vowel" ? 0.1 : 0.2) : 1
-      );
     });
   });
 

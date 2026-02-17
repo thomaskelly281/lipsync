@@ -44,6 +44,7 @@ interface Band {
 export class Lipsync {
   public features: Feature | null = null;
   public viseme: VISEMES = VISEMES.sil;
+  public state: FSMStates = FSMStates.silence;
   private audioContext: AudioContext;
   private analyser: AnalyserNode;
   private dataArray: Uint8Array;
@@ -53,16 +54,15 @@ export class Lipsync {
   private binWidth: number;
   private bands: Band[];
   private audioSource?: HTMLMediaElement;
-  private state: FSMStates = FSMStates.silence;
   private visemeStartTime: number = 0; // Timestamp when current viseme started (ms)
-  private maxVisemeDuration: number = 100; // Max duration in ms before penalty kicks in
+  private maxVisemeDuration: number = 400; // Max duration in ms before penalty kicks in
   constructor(
     params = {
-      fftSize: 2048,
-      historySize: 10,
+      fftSize: 4096,
+      historySize: 15,
     }
   ) {
-    const { fftSize = 2048, historySize = 10 } = params;
+    const { fftSize = 4096, historySize = 15 } = params;
     this.audioContext = new (window.AudioContext ||
       (window as any).webkitAudioContext)();
     this.analyser = this.audioContext.createAnalyser();
@@ -236,7 +236,7 @@ export class Lipsync {
     }
 
     // Update state and viseme
-    this.state = newState;
+    this.state = newState as FSMStates;
     this.viseme = topViseme;
 
     // Debugging: Log scores and features
@@ -379,39 +379,71 @@ export class Lipsync {
       const currentTime = performance.now();
       const visemeDuration = currentTime - this.visemeStartTime; // Duration in ms
 
+      const earlyPhaseEnd = 150;  // ms - extended for more stable initial hold
+      const midPhaseEnd = 400;    // ms - extended mid phase before penalty
+
       for (const viseme in adjustedScores) {
         const isCurrentViseme = viseme === this.viseme;
 
         if (isCurrentViseme) {
           // Calculate decay factor based on duration
-          // Early phase (0-100ms): Full boost (1.3x)
-          // Mid phase (100-300ms): Gradual decay from 1.3x to 1.0x
-          // Late phase (300ms+): Penalty that increases over time
+          // Early phase (0-150ms): Full boost (1.5x) - stronger than before
+          // Mid phase (150-400ms): Gradual decay from 1.5x to 1.0x
+          // Late phase (400ms+): Gentle penalty to encourage transitions
           let boostFactor: number;
 
-          const earlyPhaseEnd = 100; // ms
-
           if (visemeDuration <= earlyPhaseEnd) {
-            // Normal boost for first 100ms
-            boostFactor = 1.3;
-          } else if (visemeDuration <= this.maxVisemeDuration) {
-            // Gradual decay: linearly interpolate from 1.3 to 1.0
-            const decayRange = this.maxVisemeDuration - earlyPhaseEnd;
+            // Strong boost for first 150ms — holds the viseme firmly
+            boostFactor = 1.5;
+          } else if (visemeDuration <= midPhaseEnd) {
+            // Gradual decay: linearly interpolate from 1.5 to 1.0
+            const decayRange = midPhaseEnd - earlyPhaseEnd;
             const decay = (visemeDuration - earlyPhaseEnd) / decayRange;
-            boostFactor = 1.3 - 0.3 * decay;
+            boostFactor = 1.5 - 0.5 * decay;
           } else {
-            // Apply penalty after maxVisemeDuration
-            // Penalty increases the longer it's held
-            const excessDuration = visemeDuration - this.maxVisemeDuration;
-            boostFactor = Math.max(0.5, 1.0 - excessDuration / 1000);
+            // Gentle penalty after midPhaseEnd — allows natural transitions
+            const excessDuration = visemeDuration - midPhaseEnd;
+            boostFactor = Math.max(0.6, 1.0 - excessDuration / 1500);
           }
 
           adjustedScores[viseme] *= boostFactor;
+        } else {
+          // Hysteresis: penalise rapid switching within the same phonetic category.
+          // This prevents "vowel hopping" (aa→E→I within a single syllable) and
+          // double-plosive artefacts without blocking legitimate phoneme changes.
+          const currentCategory = VISEMES_STATES[this.viseme];
+          const candidateCategory = VISEMES_STATES[viseme as VISEMES];
+
+          if (
+            currentCategory === candidateCategory &&
+            currentCategory !== FSMStates.silence &&
+            visemeDuration < 120
+          ) {
+            // Too soon to switch to same-category viseme — apply a 30% penalty
+            adjustedScores[viseme as VISEMES] *= 0.7;
+          }
         }
       }
     }
 
     return adjustedScores;
+  }
+
+  /**
+   * Returns a 0–1 intensity value scaled to the current audio volume.
+   * Use this to modulate morph-target targets so the mouth opens in
+   * proportion to how loud the speaker is rather than snapping fully open.
+   * Reduced range (0.3–0.85) to show less teeth and create more subtle movements.
+   */
+  getIntensity(): number {
+    if (!this.features || this.viseme === VISEMES.sil) {
+      return 0;
+    }
+    // Map volume to a 0.3–0.85 range for more subtle mouth movements
+    // Lower minimum (0.3) means quieter sounds barely open the mouth
+    // Lower maximum (0.85) prevents over-exaggerated wide openings and reduces teeth visibility
+    const raw = this.features.volume;
+    return Math.min(0.85, Math.max(0.3, raw * 3));
   }
 
   processAudio() {

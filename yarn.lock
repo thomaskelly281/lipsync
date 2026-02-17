@@ -1357,7 +1357,7 @@ lightningcss@^1.21.0, lightningcss@1.29.2:
     lightningcss-win32-arm64-msvc "1.29.2"
     lightningcss-win32-x64-msvc "1.29.2"
 
-"lipsync-demo@file:/Users/wawa/Documents/Projects/wawasensei/wawa-lipsync/examples/lipsync-demo":
+"lipsync-demo@file:/Users/thomaskelly/Documents/GitHub/chill-music-app/wawa-lipsync/examples/lipsync-demo":
   version "1.0.0"
   resolved "file:examples/lipsync-demo"
   dependencies:
@@ -1965,7 +1965,7 @@ wawa-lipsync@^0.0.1:
   resolved "https://registry.npmjs.org/wawa-lipsync/-/wawa-lipsync-0.0.1.tgz"
   integrity sha512-4ynJX3LcztOi1vvnfzxxXiqewYxd1teY2EpQ+YfOT8T0WvUXlRouJ15gaBXabFe8eHq2EB8C5X5aGYxrNM1Daw==
 
-"wawa-lipsync@file:/Users/wawa/Documents/Projects/wawasensei/wawa-lipsync/packages/wawa-lipsync":
+"wawa-lipsync@file:/Users/thomaskelly/Documents/GitHub/chill-music-app/wawa-lipsync/packages/wawa-lipsync":
   version "0.0.2"
   resolved "file:packages/wawa-lipsync"
 
