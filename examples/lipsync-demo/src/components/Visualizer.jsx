@@ -1,150 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { lipsyncManager } from "../App";
 
-const audioFiles = [
+const audioClips = [
   {
-    name: "Emma (ElevenLabs)",
-    files: [
-      {
-        name: "A",
-        path: "audios/ElevenLabs_Emma_a.mp3",
-      },
-      {
-        name: "E",
-        path: "audios/ElevenLabs_Emma_e.mp3",
-      },
-      {
-        name: "O",
-        path: "audios/ElevenLabs_Emma_o.mp3",
-      },
-      {
-        name: "You",
-        path: "audios/ElevenLabs_Emma_you.mp3",
-      },
-      {
-        name: "Vowels",
-        path: "audios/ElevenLabs_Emma_vowels.mp3",
-      },
-
-      {
-        name: "Ta",
-        path: "audios/ElevenLabs_Emma_ta.mp3",
-      },
-      {
-        name: "Click",
-        path: "audios/ElevenLabs_Emma_click.mp3",
-      },
-      {
-        name: "Bump",
-        path: "audios/ElevenLabs_Emma_bump.mp3",
-      },
-      {
-        name: "Not",
-        path: "audios/ElevenLabs_Emma_not.mp3",
-      },
-      {
-        name: "Lot",
-        path: "audios/ElevenLabs_Emma_lot.mp3",
-      },
-      {
-        name: "Think",
-        path: "audios/ElevenLabs_Emma_think.mp3",
-      },
-      {
-        name: "Fan",
-        path: "audios/ElevenLabs_Emma_fan.mp3",
-      },
-      {
-        name: "This",
-        path: "audios/ElevenLabs_Emma_this.mp3",
-      },
-      {
-        name: "Consonants",
-        path: "audios/ElevenLabs_Emma_consonants.mp3",
-      },
-    ],
-  },
-  {
-    name: "Liam (ElevenLabs)",
-    files: [
-      {
-        name: "A",
-        path: "audios/ElevenLabs_Liam_a.mp3",
-      },
-      {
-        name: "E",
-        path: "audios/ElevenLabs_Liam_e.mp3",
-      },
-      {
-        name: "O",
-        path: "audios/ElevenLabs_Liam_o.mp3",
-      },
-      {
-        name: "You",
-        path: "audios/ElevenLabs_Liam_you.mp3",
-      },
-      {
-        name: "Vowels",
-        path: "audios/ElevenLabs_Liam_vowels.mp3",
-      },
-      {
-        name: "Ta",
-        path: "audios/ElevenLabs_Liam_ta.mp3",
-      },
-      {
-        name: "Click",
-        path: "audios/ElevenLabs_Liam_click.mp3",
-      },
-      {
-        name: "Bump",
-        path: "audios/ElevenLabs_Liam_bump.mp3",
-      },
-      {
-        name: "Not",
-        path: "audios/ElevenLabs_Liam_not.mp3",
-      },
-      {
-        name: "Lot",
-        path: "audios/ElevenLabs_Liam_lot.mp3",
-      },
-      {
-        name: "Think",
-        path: "audios/ElevenLabs_Liam_think.mp3",
-      },
-      {
-        name: "Fan",
-        path: "audios/ElevenLabs_Liam_fan.mp3",
-      },
-      {
-        name: "This",
-        path: "audios/ElevenLabs_Liam_this.mp3",
-      },
-      {
-        name: "Consonants",
-        path: "audios/ElevenLabs_Liam_consonants.mp3",
-      },
-    ],
-  },
-  {
-    name: "Misc",
-    files: [
-      {
-        name: "ElevenLabs long test",
-        path: "audios/ElevenLabs_Text_to_Speech_audio.mp3",
-      },
-      {
-        name: "OpenAI Alloy test",
-        path: "audios/OpenAI_Alloy_test.mp3",
-      },
-      {
-        name: "OpenAI Alloy test (short)",
-        path: "audios/OpenAI_Alloy_test_short.mp3",
-      },
-      {
-        name: "Chatbot Kit welcome message",
-        path: "audios/welcome-message.mp3",
-      },
-    ],
+    name: "Cortana test",
+    path: "audios/Cortana-test-1.mp3",
   },
 ];
 
@@ -349,22 +209,15 @@ export const Visualizer = () => {
           </div>
         )}
       </section>
-      <div className="pointer-events-auto flex flex-col gap-4">
-        {audioFiles.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="flex flex-col gap-2">
-            <h2 className="text-lg font-bold text-left">{section.name}</h2>
-            <div className="flex flex-row items-center justify-start gap-2 flex-wrap">
-              {section.files.map((audio, index) => (
-                <button
-                  key={index}
-                  className="p-2 text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer rounded min-w-12"
-                  onClick={() => setAudioFile(audio.path)}
-                >
-                  {audio.name}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="pointer-events-auto flex flex-col gap-2">
+        {audioClips.map((audio) => (
+          <button
+            key={audio.path}
+            className="p-3 text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer rounded w-fit"
+            onClick={() => setAudioFile(audio.path)}
+          >
+            {audio.name}
+          </button>
         ))}
       </div>
     </div>
